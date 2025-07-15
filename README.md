@@ -14,7 +14,7 @@ A versão inicial será utilizada por apenas **um único usuário**, sem necessi
 
 ---
 
-## 🧠 Regras de Negócio
+## Regras de Negócio
 
 ### Depósito
 
@@ -38,7 +38,7 @@ A versão inicial será utilizada por apenas **um único usuário**, sem necessi
 
 ---
 
-## 🛠 Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 - Python 3.x
 - Lógica de programação estruturada
@@ -46,7 +46,7 @@ A versão inicial será utilizada por apenas **um único usuário**, sem necessi
 
 ---
 
-## 🚀 Como Executar
+## Como Executar
 
 1. Clone este repositório:
    ```bash
