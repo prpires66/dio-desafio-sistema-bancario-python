@@ -1,66 +1,137 @@
-menu = """
+from abc import ABC, abstractmethod, abstractproperty
+from datetime import datetime
 
-[d] Depositar
-[s] Sacar
-[e] Extrato
-[q] Sair
+class Cliente:
+    def __init__(self, endereco):
+        self.endereco = endereco
+        self.contas = []
 
-=> """
+    def realizar_transacao(self, conta, transacao):
+        transacao.registrar(conta)
+    
+    def adicionar_conta(self, conta):
+        self.contas.append(conta)
+    
 
-saldo = 0
-limite = 500
-extrato = ""
-numero_saques = 0
-LIMITE_SAQUES = 3
+class PessoaFisica(Cliente):
+    def __init__(self, nome, data_nascimento, cpf):
+        super().__init__(endereco=None)
+        self.nome = nome
+        self.data_nascimento = data_nascimento
+        self.cpf = cpf
 
-while True:
-
-    opcao = input(menu)
-
-    if opcao == "d":
-        valor = float(input("Informe o valor do depósito: "))
-
+class Conta:
+    def __init__(self, numero, cliente):
+        self._saldo = 0
+        self._numero = numero
+        self._cliente = cliente
+        self._historico = Historico()
+    
+    @classmethod
+    def nova_conta(cls, cliente, numero):
+        return cls(numero, cliente)
+    
+    @property
+    def saldo(self):
+        return self._saldo
+    @property
+    def numero(self):
+        return self._numero
+    @property
+    def agencia(self):
+        return '0001'
+    @property
+    def cliente(self):  
+        return self._cliente
+    @property
+    def historico(self):
+        return self._historico
+    
+    def sacar(self, valor):
+        if 0 < valor <= self._saldo:
+            self._saldo -= valor
+            return True
+        return False
+    def depositar(self, valor):
         if valor > 0:
-            saldo += valor
-            extrato += f"Depósito: R$ {valor:.2f}\n"
+            self._saldo += valor
+            return True
+        return False
+    
 
-        else:
-            print("Operação falhou! O valor informado é inválido.")
+class ContaCorrente(Conta):
+    def __init__(self, cliente, limite=500, limite_saques=3):
+        super().__init__(numero=None, cliente=cliente)
+        self.limite = limite
+        self.limite_saques = limite_saques
 
-    elif opcao == "s":
-        valor = float(input("Informe o valor do saque: "))
+    def sacar(self, valor):
+        if valor <= self.limite and super().sacar(valor):
+            return True
+        return False
+    
+    def depositar(self, valor):
+        if super().depositar(valor):
+            return True
+        return False
+    
+    def __str__(self):
+        return f'Conta Corrente {self.numero} - Saldo: {self.saldo} - Limite: {self.limite} - Saques Restantes: {self.limite_saques}'  
+    
+    
+    class Historico:
+        def __init__(self):
+            self.transacoes = []
+        
+        @property
+        def transacoes(self):
+            return self._transacoes
+        
+        def adicionar_transacao(self, transacao):
+            self._transacoes.append({
+                'tipo': transacao.__class__.__name__,
+                'valor': transacao.valor,
+                'data': datetime.now(),
+            })
 
-        excedeu_saldo = valor > saldo
 
-        excedeu_limite = valor > limite
+    class Transacao(ABC):
+        @property
+        @abstractproperty
+        def valor(self):
+            pass
 
-        excedeu_saques = numero_saques >= LIMITE_SAQUES
+        @abstractmethod
+        def registrar(self, conta):
+            pass
+    
+    class Saque(Transacao):
+        def __init__(self, valor):
+            self._valor = valor
 
-        if excedeu_saldo:
-            print("Operação falhou! Você não tem saldo suficiente.")
+        @property
+        def valor(self):
+            return self._valor
 
-        elif excedeu_limite:
-            print("Operação falhou! O valor do saque excede o limite.")
+        def registrar(self, conta):
+            self.conta = conta
+            if self.realizar():
+                conta.historico.adicionar_transacao(self)
+                return True
+            return False
 
-        elif excedeu_saques:
-            print("Operação falhou! Número máximo de saques excedido.")
 
-        elif valor > 0:
-            saldo -= valor
-            extrato += f"Saque: R$ {valor:.2f}\n"
-            numero_saques += 1
+    class Deposito(Transacao):
+        def __init__(self, valor):
+            self._valor = valor
 
-        else:
-            print("Operação falhou! O valor informado é inválido.")
+        @property
+        def valor(self):
+            return self._valor
 
-    elif opcao == "e":
-        print("\n================ EXTRATO ================")
-        print("Não foram realizadas movimentações." if not extrato else extrato)
-        print(f"\nSaldo: R$ {saldo:.2f}")
-        print("==========================================")
-
-    elif opcao == "q":
-        break
-
-    else:
-        print("Operação inválida, por favor selecione novamente a operação desejada.")
+        def registrar(self, conta):
+            self.conta = conta
+            if self.realizar():
+                conta.historico.adicionar_transacao(self)
+                return True
+            return False
